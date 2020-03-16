@@ -35,7 +35,7 @@ def FLAGS():
 
     parser.add_argument("--num_epochs", type=int, default=30)
     parser.add_argument("--save_every_n_epochs", type=int, default=5)
-
+    parser.add_argument("--checkpoint", default="", required=True)
     flags = parser.parse_args()
 
     assert os.path.isdir(dirname(flags.log_dir)), f"Log directory root {dirname(flags.log_dir)} not found."
@@ -90,11 +90,15 @@ if __name__ == '__main__':
 
     # model, and put to device
     model = Classifier()
+    if flags.checkpoint != "":   
+        ckpt = torch.load(flags.checkpoint)
+        model.load_state_dict(ckpt["state_dict"])
+        print("Loaded model {}".format(flags.checkpoint))
     model = model.to(flags.device)
 
     # optimizer and lr scheduler
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.8)
 
     writer = SummaryWriter(flags.log_dir)
 
@@ -167,8 +171,9 @@ if __name__ == '__main__':
 
             iteration += 1
 
-        if i % 10 == 9:
+        if i % 2 == 1:
             lr_scheduler.step()
+            print("Epoch: {} lr step".format(i))
 
         training_loss = sum_loss.item() / len(training_loader)
         training_accuracy = sum_accuracy.item() / len(training_loader)
