@@ -3,6 +3,8 @@ import os
 from os import listdir
 from os.path import join
 import json
+import pathlib as pl 
+import torch.utils.data
 
 def random_shift_events(events, max_shift=20, resolution=(180, 240)):
     H, W = resolution
@@ -81,6 +83,9 @@ class RostrosDataset(torch.utils.data.Dataset):
         else:
             raise RuntimeError('{} is not a valid split. Use -test-, -train- or -val-. '.format(self.split))
 
+        # remover archivos 
+        self.dataset_dir = [f for f in self.dataset_dir if pl.Path(os.path.join(self.root,f)).is_file()]
+
     def __len__(self):
         return len(self.dataset_dir)
 
@@ -92,7 +97,10 @@ class RostrosDataset(torch.utils.data.Dataset):
 
         # get event file
         video_dir = os.path.join(self.root, video_file)
-        events = np.load(video_dir).astype(np.float32)
+        events = np.load(video_dir.replace('.avi','.npy')).astype(np.float32)
+
+        # flip x,y columns... they are in inverse orders
+        events[:, 0], events[:, 1] = events[:, 1], events[:, 0].copy()
 
         if self.augmentation:
             events = random_shift_events(events)
@@ -100,3 +108,17 @@ class RostrosDataset(torch.utils.data.Dataset):
 
         return events, target            
 
+if __name__ == '__main__':
+    
+    DATASET_DIR = '../../dataset/deepfake-detection-challenge/'
+    TRAIN_DIR = 'event_dataset/train'
+    TEST_DIR = 'event_dataset/train' # si, tienen el mismo nombre
+
+    train_root = os.path.join(DATASET_DIR, TRAIN_DIR)
+    test_root = os.path.join(DATASET_DIR, TEST_DIR)
+
+    train_dataset = RostrosDataset(train_root, split = 'train', augmentation = True)
+    test_dataset = RostrosDataset(test_root, split = 'test', augmentation = True)
+
+    n = test_dataset[0]
+    print(n)
