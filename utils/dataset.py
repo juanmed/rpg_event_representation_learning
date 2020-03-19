@@ -1,7 +1,8 @@
 import numpy as np
+import os
 from os import listdir
 from os.path import join
-
+import json
 
 def random_shift_events(events, max_shift=20, resolution=(180, 240)):
     H, W = resolution
@@ -53,3 +54,49 @@ class NCaltech101:
             events = random_flip_events_along_x(events)
 
         return events, label
+
+class RostrosDataset(torch.utils.data.Dataset):
+
+    def __init__(self, root, split, augmentation = False):
+        self.root = root
+        self.split = split
+        self.augmentation = augmentation
+
+        if (split == "train"):
+            metadata_file = "train_metadata.json"
+            # read labels
+            with open(os.path.join(root,metadata_file), 'r') as json_file:
+                self.data = json.load(json_file)
+                self.dataset_dir = list(self.data.keys())
+
+        elif(split == "test"):
+            metadata_file = "test_metadata.json"
+            # read labels
+            with open(os.path.join(root,metadata_file), 'r') as json_file:
+                self.data = json.load(json_file)
+                self.dataset_dir = list(self.data.keys())
+
+        elif(split == "val"):
+            raise RunTimeError('Validation dataset still unavailable')
+        else:
+            raise RuntimeError('{} is not a valid split. Use -test-, -train- or -val-. '.format(self.split))
+
+    def __len__(self):
+        return len(self.dataset_dir)
+
+    def __getitem__(self, idx):
+
+        # get label: Fake : 1, Real: 0
+        video_file = self.dataset_dir[idx]
+        target = [1. if self.data[video_file]['label'] == 'FAKE' else 0.][0]
+
+        # get event file
+        video_dir = os.path.join(self.root, video_file)
+        events = np.load(video_dir).astype(np.float32)
+
+        if self.augmentation:
+            events = random_shift_events(events)
+            events = random_flip_events_along_x(events)
+
+        return events, target            
+
