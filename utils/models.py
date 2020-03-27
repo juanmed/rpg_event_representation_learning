@@ -3,7 +3,7 @@ from os.path import join, dirname, isfile
 import torch
 import torch.nn.functional as F
 import numpy as np
-from torchvision.models.resnet import resnet34
+from torchvision.models.resnet import resnet34, resnet18
 import tqdm
 
 
@@ -135,7 +135,7 @@ class Classifier(nn.Module):
 
         nn.Module.__init__(self)
         self.quantization_layer = QuantizationLayer(voxel_dimension, mlp_layers, activation)
-        self.classifier = resnet34(pretrained=pretrained)
+        self.classifier = resnet18(pretrained=pretrained)
 
         self.crop_dimension = crop_dimension
 

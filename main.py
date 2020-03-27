@@ -6,11 +6,13 @@ import os
 import numpy as np
 import tqdm
 
+from torchsummary import summary
 from utils.models import Classifier
 from torch.utils.tensorboard import SummaryWriter
 from utils.loader import Loader
 from utils.loss import cross_entropy_loss_and_accuracy
 from utils.dataset import NCaltech101
+from utils.dataset import RostrosDataset
 
 
 torch.manual_seed(1)
@@ -33,9 +35,9 @@ def FLAGS():
     parser.add_argument("--pin_memory", type=bool, default=True)
     parser.add_argument("--batch_size", type=int, default=4)
 
-    parser.add_argument("--num_epochs", type=int, default=30)
-    parser.add_argument("--save_every_n_epochs", type=int, default=5)
-    parser.add_argument("--checkpoint", default="", required=True)
+    parser.add_argument("--num_epochs", type=int, default=90)
+    parser.add_argument("--save_every_n_epochs", type=int, default=10)
+    parser.add_argument("--checkpoint", default="", required=False)
     flags = parser.parse_args()
 
     assert os.path.isdir(dirname(flags.log_dir)), f"Log directory root {dirname(flags.log_dir)} not found."
@@ -81,24 +83,38 @@ if __name__ == '__main__':
     flags = FLAGS()
 
     # datasets, add augmentation to training set
-    training_dataset = NCaltech101(flags.training_dataset, augmentation=True)
-    validation_dataset = NCaltech101(flags.validation_dataset)
+    #training_dataset = NCaltech101(flags.training_dataset, augmentation=True)
+    #validation_dataset = NCaltech101(flags.validation_dataset)
+
+    training_dataset = RostrosDataset(flags.training_dataset, split = 'train', augmentation = False)
+    validation_dataset = RostrosDataset(flags.validation_dataset, split = 'test', augmentation = False)
+    print("Train: {}".format(len(training_dataset)))
+    print("Test: {}".format(len(validation_dataset)))
 
     # construct loader, handles data streaming to gpu
     training_loader = Loader(training_dataset, flags, device=flags.device)
     validation_loader = Loader(validation_dataset, flags, device=flags.device)
 
     # model, and put to device
-    model = Classifier()
+    model = Classifier(num_classes = 2, voxel_dimension=(18,180,240))
+
     if flags.checkpoint != "":   
         ckpt = torch.load(flags.checkpoint)
         model.load_state_dict(ckpt["state_dict"])
         print("Loaded model {}".format(flags.checkpoint))
+
+    # model parameters
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
+    print("Total Parameters: {}".format(pytorch_total_params))
+    pytorch_total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print("Total Trainable Parameters: {}".format(pytorch_total_params))
+
+
     model = model.to(flags.device)
 
     # optimizer and lr scheduler
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.8)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.1)
 
     writer = SummaryWriter(flags.log_dir)
 

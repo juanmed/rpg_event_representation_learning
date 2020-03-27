@@ -5,6 +5,7 @@ from os.path import join
 import json
 import pathlib as pl 
 import torch.utils.data
+import random
 
 def random_shift_events(events, max_shift=20, resolution=(180, 240)):
     H, W = resolution
@@ -65,26 +66,26 @@ class RostrosDataset(torch.utils.data.Dataset):
         self.augmentation = augmentation
 
         if (split == "train"):
-            metadata_file = "train_metadata.json"
+            metadata_file = "train_sample.json"
             # read labels
             with open(os.path.join(root,metadata_file), 'r') as json_file:
                 self.data = json.load(json_file)
                 self.dataset_dir = list(self.data.keys())
 
         elif(split == "test"):
-            metadata_file = "test_metadata.json"
+            metadata_file = "test_sample.json"
             # read labels
             with open(os.path.join(root,metadata_file), 'r') as json_file:
                 self.data = json.load(json_file)
                 self.dataset_dir = list(self.data.keys())
 
         elif(split == "val"):
-            raise RunTimeError('Validation dataset still unavailable')
+            self.dataset_dir = os.listdir(self.root)
         else:
             raise RuntimeError('{} is not a valid split. Use -test-, -train- or -val-. '.format(self.split))
 
         # remover archivos 
-        self.dataset_dir = [f for f in self.dataset_dir if pl.Path(os.path.join(self.root,f)).is_file()]
+        self.dataset_dir = [f for f in self.dataset_dir if pl.Path(os.path.join(self.root,f.replace(".avi", ".npy"))).is_file()]
 
     def __len__(self):
         return len(self.dataset_dir)
@@ -92,21 +93,28 @@ class RostrosDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
 
         # get label: Fake : 1, Real: 0
-        video_file = self.dataset_dir[idx]
-        target = [1. if self.data[video_file]['label'] == 'FAKE' else 0.][0]
+        file = self.dataset_dir[idx]
+        if self.split == "val":
+            target = [1. if (random.random() > 0.5) else 0.][0]
+            print(file)
+        else:
+            target = [1. if self.data[file]['label'] == 'FAKE' else 0.][0]
 
         # get event file
-        video_dir = os.path.join(self.root, video_file)
-        events = np.load(video_dir.replace('.avi','.npy')).astype(np.float32)
+        file_dir = os.path.join(self.root, file)
+        events = np.load(file_dir).astype(np.float32)
+        #if events.shape[0] > 2000000:
+        #    events = events[:2000000]
 
         # flip x,y columns... they are in inverse orders
-        events[:, 0], events[:, 1] = events[:, 1], events[:, 0].copy()
+        # not anymore, solvd 
+        #events[:, 0], events[:, 1] = events[:, 1], events[:, 0].copy()
 
         if self.augmentation:
             events = random_shift_events(events)
             events = random_flip_events_along_x(events)
 
-        return events, target            
+        return events, int(target)            
 
 if __name__ == '__main__':
     
@@ -120,5 +128,11 @@ if __name__ == '__main__':
     train_dataset = RostrosDataset(train_root, split = 'train', augmentation = True)
     test_dataset = RostrosDataset(test_root, split = 'test', augmentation = True)
 
-    n = test_dataset[0]
-    print(n)
+    print("Train dataset: {}".format(len(train_dataset)))
+    print("Test dataset: {}".format(len(test_dataset)))
+
+    for i, events in enumerate(train_dataset):
+        print(len(events[0]), events[1])
+    print("Testing")
+    for i, events in enumerate(test_dataset):
+        print(len(events[0]), events[1])
