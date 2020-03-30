@@ -23,7 +23,7 @@ class ValueLayer(nn.Module):
             in_channels = out_channels
 
         # init with trilinear kernel
-        path = join(dirname(__file__), "quantization_layer_init", "trilinear_init.pth".format(num_channels))
+        path = join(dirname(__file__), "quantization_layer_init", "trilinear_init1.pth".format(num_channels))
         if isfile(path):
             state_dict = torch.load(path)
             self.load_state_dict(state_dict)
