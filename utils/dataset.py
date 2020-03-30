@@ -89,7 +89,7 @@ class RostrosDataset(torch.utils.data.Dataset):
 
         # remover archivos listados en json pero que no existen
         self.dataset_dir = [f for f in self.dataset_dir if pl.Path(os.path.join(self.root,f.replace(".avi", ".npy"))).is_file()]
-
+        self.dataset_dir = [f for f in self.dataset_dir if f.endswith(".npy")]
     def __len__(self):
         return len(self.dataset_dir)
 
@@ -99,7 +99,6 @@ class RostrosDataset(torch.utils.data.Dataset):
         file = self.dataset_dir[idx]
         if self.split == "val":
             target = [1. if (random.random() > 0.5) else 0.][0]
-            print(file)
         else:
             target = [1. if self.data[file]['label'] == 'FAKE' else 0.][0]
 
