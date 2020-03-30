@@ -82,7 +82,7 @@ def create_image(representation):
 if __name__ == '__main__':
     flags = FLAGS()
 
-    # datasets, add augmentation to training set
+    # datasets, add augmentation to training set papa
     #training_dataset = NCaltech101(flags.training_dataset, augmentation=True)
     #validation_dataset = NCaltech101(flags.validation_dataset)
 
