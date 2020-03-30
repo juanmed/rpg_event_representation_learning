@@ -12,7 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from utils.loader import Loader
 from utils.loss import cross_entropy_loss_and_accuracy
 from utils.dataset import NCaltech101
-from utils.dataset import RostrosDataset
+from utils.dataset import RostrosDatasetEnorme
 
 
 torch.manual_seed(1)
@@ -86,8 +86,8 @@ if __name__ == '__main__':
     #training_dataset = NCaltech101(flags.training_dataset, augmentation=True)
     #validation_dataset = NCaltech101(flags.validation_dataset)
 
-    training_dataset = RostrosDataset(flags.training_dataset, split = 'train', augmentation = False)
-    validation_dataset = RostrosDataset(flags.validation_dataset, split = 'test', augmentation = False)
+    training_dataset = RostrosDatasetEnorme(flags.training_dataset, split = 'train', augmentation = True)
+    validation_dataset = RostrosDatasetEnorme(flags.validation_dataset, split = 'test', augmentation = False)
     print("Train: {}".format(len(training_dataset)))
     print("Test: {}".format(len(validation_dataset)))
 
@@ -176,14 +176,19 @@ if __name__ == '__main__':
             optimizer.zero_grad()
 
             pred_labels, representation = model(events)
-            loss, accuracy = cross_entropy_loss_and_accuracy(pred_labels, labels)
+            if pred_labels.size(0) == labels.size(0):
+                loss, accuracy = cross_entropy_loss_and_accuracy(pred_labels, labels)
 
-            loss.backward()
+                loss.backward()
 
-            optimizer.step()
+                optimizer.step()
 
-            sum_accuracy += accuracy
-            sum_loss += loss
+                sum_accuracy += accuracy
+                sum_loss += loss.item()
+
+                del loss
+            else:
+                print("pred {} y lbls {} no son del mismo tamano".format(pred_labels,labels))
 
             iteration += 1
 
@@ -191,7 +196,7 @@ if __name__ == '__main__':
             lr_scheduler.step()
             print("Epoch: {} lr step".format(i))
 
-        training_loss = sum_loss.item() / len(training_loader)
+        training_loss = sum_loss / len(training_loader)
         training_accuracy = sum_accuracy.item() / len(training_loader)
         print(f"Training Iteration {iteration:5d}  Loss {training_loss:.4f}  Accuracy {training_accuracy:.4f}")
 

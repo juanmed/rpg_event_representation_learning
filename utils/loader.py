@@ -8,14 +8,17 @@ class Loader:
     def __init__(self, dataset, flags, device):
         self.device = device
         split_indices = list(range(len(dataset)))
-        sampler = torch.utils.data.sampler.SubsetRandomSampler(split_indices)
-        self.loader = torch.utils.data.DataLoader(dataset, batch_size=flags.batch_size, sampler=sampler,
+        #sampler = torch.utils.data.sampler.SubsetRandomSampler(split_indices)
+        self.loader = torch.utils.data.DataLoader(dataset, batch_size=flags.batch_size, #sampler=sampler,
                                              num_workers=flags.num_workers, pin_memory=flags.pin_memory,
                                              collate_fn=collate_events)
 
     def __iter__(self):
         for data in self.loader:
             data = [d.to(self.device) for d in data]
+            #if data[0].shape[0] == 0:
+            #    continue
+            #else:
             yield data
 
     def __len__(self):

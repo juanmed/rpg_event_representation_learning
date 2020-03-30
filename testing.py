@@ -7,7 +7,7 @@ import os
 from utils.loader import Loader
 from utils.loss import cross_entropy_loss_and_accuracy
 from utils.models import Classifier
-from utils.dataset import NCaltech101
+from utils.dataset import NCaltech101, RostrosDataset
 
 
 def FLAGS():
@@ -41,13 +41,14 @@ def FLAGS():
 if __name__ == '__main__':
     flags = FLAGS()
 
-    test_dataset = NCaltech101(flags.test_dataset)
+    #test_dataset = NCaltech101(flags.test_dataset)
+    test_dataset = RostrosDataset(flags.test_dataset, split = 'test', augmentation = False)
 
     # construct loader, responsible for streaming data to gpu
     test_loader = Loader(test_dataset, flags, flags.device)
 
     # model, load and put to device
-    model = Classifier()
+    model = Classifier(num_classes = 2, voxel_dimension=(18,180,240))
     ckpt = torch.load(flags.checkpoint)
     model.load_state_dict(ckpt["state_dict"])
     model = model.to(flags.device)
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     print("Test step")
     for events, labels in tqdm.tqdm(test_loader):
         with torch.no_grad():
-            pred_labels, _ = model(events)
+            pred_labels, representation = model(events)
             loss, accuracy = cross_entropy_loss_and_accuracy(pred_labels, labels)
 
         sum_accuracy += accuracy
