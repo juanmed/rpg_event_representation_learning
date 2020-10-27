@@ -30,11 +30,11 @@ class ValueLayer(nn.Module):
         else:
             print("   +++ Trilinear kernel not found. Training. +++")
             self.init_kernel(num_channels)
-            torch.save({
-                "state_dict": self.state_dict(),
-                "mlp.0.weight": self.mlp.state_dict()
-            }, path)
-            print("   +++ Saved new Trilinear kernel: {} +++".format(path))
+            #torch.save({
+            #    "state_dict": self.state_dict(),
+            #    "mlp.0.weight": self.mlp.state_dict()
+            #}, path)
+            #print("   +++ Saved new Trilinear kernel: {} +++".format(path))
 
     def forward(self, x):
         # create sample of batchsize 1 and input channels 1
@@ -141,7 +141,7 @@ class Classifier(nn.Module):
 
         nn.Module.__init__(self)
         self.quantization_layer = QuantizationLayer(voxel_dimension, mlp_layers, activation)
-        self.classifier = resnet18(pretrained=pretrained)
+        self.classifier = resnet34(pretrained=pretrained)
 
         self.crop_dimension = crop_dimension
 
