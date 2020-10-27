@@ -96,7 +96,7 @@ if __name__ == '__main__':
     validation_loader = Loader(validation_dataset, flags, device=flags.device)
 
     # model, and put to device
-    model = Classifier(num_classes = 2, voxel_dimension=(18,180,240))
+    model = Classifier(num_classes = 2, voxel_dimension=(18,180,240),pretrained = False)
 
     if flags.checkpoint != "":   
         ckpt = torch.load(flags.checkpoint)
@@ -113,8 +113,8 @@ if __name__ == '__main__':
     model = model.to(flags.device)
 
     # optimizer and lr scheduler
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1e-8)
+    lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, 0.5)
 
     writer = SummaryWriter(flags.log_dir)
 
