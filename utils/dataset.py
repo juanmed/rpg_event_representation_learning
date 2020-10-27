@@ -90,21 +90,44 @@ class RostrosDataset(torch.utils.data.Dataset):
         # remover archivos listados en json pero que no existen
         self.dataset_dir = [f for f in self.dataset_dir if pl.Path(os.path.join(self.root,f.replace(".avi", ".npy"))).is_file()]
         self.dataset_dir = [f for f in self.dataset_dir if f.endswith(".npy")]
+        self.index = 0
     def __len__(self):
         return len(self.dataset_dir)
 
     def __getitem__(self, idx):
 
         # get label: Fake : 1, Real: 0
-        file = self.dataset_dir[idx]
+        success = False
+        while not success:
+            file = self.dataset_dir[self.index]
+            try:
+                file_dir = os.path.join(self.root, file)
+                events = np.load(file_dir, allow_pickle = True).astype(np.float32)
+                events[-1,-1]
+                if events.shape[0] == 0:
+                    raise Exception("Archivo sin eventos.")
+                else:
+                    success = True
+                    break
+                    break
+            except Exception as e:
+                print("ERROR: {}".format(str(e)))
+                try:
+                    os.remove(file)
+                except Exception as e:
+                    print("ERRO AL ELIMINAR: {}".format(str(e)))
+                self.index = self.index + 1
+                if self.index >= len(self.dataset_dir):
+                    self.index = 0
+
         if self.split == "val":
             target = [1. if (random.random() > 0.5) else 0.][0]
         else:
             target = [1. if self.data[file]['label'] == 'FAKE' else 0.][0]
 
         # get event file
-        file_dir = os.path.join(self.root, file)
-        events = np.load(file_dir).astype(np.float32)
+        #file_dir = os.path.join(self.root, file)
+        #events = np.load(file_dir, allow_pickle = True).astype(np.float32)
         #if events.shape[0] > 2000000:
         #    events = events[:2000000]
 
@@ -115,6 +138,10 @@ class RostrosDataset(torch.utils.data.Dataset):
         if self.augmentation:
             events = random_shift_events(events)
             events = random_flip_events_along_x(events)
+
+        self.index = self.index + 1
+        if self.index >= len(self.dataset_dir):
+            self.index = 0
 
         return events, int(target)            
 
