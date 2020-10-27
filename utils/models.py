@@ -23,18 +23,18 @@ class ValueLayer(nn.Module):
             in_channels = out_channels
 
         # init with trilinear kernel
-        path = join(dirname(__file__), "quantization_layer_init", "trilinear_init.pth".format(num_channels))
+        path = join(dirname(__file__), "quantization_layer_init", "trilinear_init1.pth".format(num_channels))
         if isfile(path):
             state_dict = torch.load(path)
             self.load_state_dict(state_dict)
         else:
             print("   +++ Trilinear kernel not found. Training. +++")
             self.init_kernel(num_channels)
-            torch.save({
-                "state_dict": self.state_dict(),
-                "mlp.0.weight": self.mlp.state_dict()
-            }, path)
-            print("   +++ Saved new Trilinear kernel: {} +++".format(path))
+            #torch.save({
+            #    "state_dict": self.state_dict(),
+            #    "mlp.0.weight": self.mlp.state_dict()
+            #}, path)
+            #print("   +++ Saved new Trilinear kernel: {} +++".format(path))
 
     def forward(self, x):
         # create sample of batchsize 1 and input channels 1
